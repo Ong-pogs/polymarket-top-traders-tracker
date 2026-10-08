@@ -1,0 +1,15 @@
+{
+  "name": "polymarket-top-traders-tracker",
+  "version": "1.0.0",
+  "description": "Shows what the wallets on Polymarket's profit leaderboards are holding right now, using the Predictefy API. Read-only, runs locally.",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node bot/server.mjs",
+    "once": "node bot/server.mjs --once",
+    "peek": "node bot/peek.mjs",
+    "test": "node --test"
+  },
+  "keywords": ["polymarket", "prediction-markets", "top-traders", "leaderboard", "copy-trading", "wallet-tracker", "smart-money", "predictefy"]
+}

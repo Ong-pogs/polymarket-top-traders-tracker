@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Top Traders Tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6' y='17' width='5' height='9' fill='%23c41e3a'/%3E%3Crect x='13.5' y='6' width='5' height='20' fill='%23ffffff'/%3E%3Crect x='21' y='12' width='5' height='14' fill='%23c41e3a'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme:dark;
+  --plane:#0d0d0d;--surface:#1a1a19;--surface-2:#232321;--ink:#fff;--ink-2:#c3c2b7;--muted:#898781;
+  --grid:#2c2c2a;--axis:#383835;--hair:rgba(255,255,255,.10);--quiet:#56554f;
+  --risk:#3987e5;--risk-dim:#184f95;--locked:#6f6e68;--side-a:#3987e5;--side-b:#d95926;
+  --brand:#c41e3a;--brand-2:#e2485f;--good:#0ca30c;--crit:#e66767;--warn:#fab219;
+  --sans:Bahnschrift,"DIN Alternate","Barlow","Segoe UI",system-ui,sans-serif;
+  --mono:"Cascadia Code","Cascadia Mono",Consolas,ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--plane);color:var(--ink);font:17px/1.42 var(--sans)}
+body{background:radial-gradient(1100px 380px at 12% -10%,#c41e3a1c,transparent 70%),repeating-linear-gradient(0deg,transparent 0 47px,#ffffff05 47px 48px),var(--plane);overflow-y:scroll}
+button,input{font:inherit;color:inherit}
+.label{font-size:13px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);font-stretch:85%;font-weight:500}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);font-size:14px;letter-spacing:-.2px}
+.src{font-family:var(--mono);font-size:12.5px;color:var(--muted);letter-spacing:-.2px}
+.muted{color:var(--muted)}.ink2{color:var(--ink-2)}
+.up{color:var(--good)}.down{color:var(--crit)}
+
+header{display:flex;align-items:center;gap:16px;padding:16px 36px 14px;border-bottom:1px solid var(--hair);position:relative}
+header::after{content:"";position:absolute;left:36px;bottom:-1px;width:250px;height:2px;background:var(--brand)}
+.mark{width:40px;height:40px;border-radius:9px;background:#111;border:1px solid var(--hair);display:flex;align-items:flex-end;justify-content:center;gap:4px;padding:7px}
+.mark i{width:6px;background:var(--brand);border-radius:1px}.mark i:nth-child(1){height:10px}.mark i:nth-child(2){height:24px;background:#fff}.mark i:nth-child(3){height:16px}
+h1{margin:0;font-size:27px;font-weight:600;letter-spacing:.2px;line-height:1.1}
+.tag{color:var(--ink-2);font-size:15px}
+.grow{flex:1}
+.pill{display:inline-flex;align-items:center;gap:9px;padding:7px 15px;border:1px solid var(--hair);border-radius:999px;background:var(--surface);font-size:15px;color:var(--ink-2);white-space:nowrap}
+.pill b{color:var(--ink);font-weight:600}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good)}.dot.busy{background:var(--warn);animation:blink 1s infinite}.dot.bad{background:var(--crit)}.dot.replay{background:var(--muted)}
+@keyframes blink{50%{opacity:.35}}
+.banner{margin:12px 36px 0;padding:12px 18px;border:1px solid #c41e3a88;background:#c41e3a1f;border-radius:12px;font-size:16px}
+.banner a{color:#fff;font-weight:600}
+
+.overview{display:grid;grid-template-columns:560px 1fr 1fr 1fr 1fr;gap:14px;padding:16px 36px 2px}
+.tile{background:var(--surface);border:1px solid var(--hair);border-radius:14px;padding:14px 20px;min-width:0}
+.hero{border-left:3px solid var(--brand);padding-bottom:12px}
+.hero .pair{display:grid;grid-template-columns:1fr;row-gap:4px;margin-top:8px}
+.hero .big{font-size:38px;font-weight:600;line-height:1;white-space:nowrap}
+.hero .big small{font-size:15px;color:var(--ink-2);font-weight:400;margin-left:8px}
+.hero .bar{height:10px;border-radius:0 4px 4px 0;background:var(--locked);margin-bottom:5px}
+.hero .bar.now{background:var(--risk);min-width:2px}
+.hero .foot{margin-top:8px;color:var(--ink-2);font-size:14.5px}
+.stat b{display:block;font-size:34px;font-weight:600;margin-top:12px;line-height:1}
+.stat b small{font-size:17px;color:var(--ink-2);font-weight:400}
+.stat .sub{display:block;color:var(--ink-2);font-size:14.5px;margin-top:8px}
+.stat .src{display:block;margin-top:5px}
+
+nav{display:flex;gap:4px;padding:12px 36px 0;border-bottom:1px solid var(--hair);align-items:flex-end}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 18px 12px;color:var(--muted);cursor:pointer;font-size:17.5px;letter-spacing:.2px}
+nav button:hover{color:var(--ink-2)}
+nav button.on{color:var(--ink);border-color:var(--brand);font-weight:600}
+nav button em{font-style:normal;margin-left:9px;padding:1px 9px;border-radius:999px;background:var(--surface-2);font-size:14px;color:var(--ink-2)}
+main{padding:14px 36px 150px}
+
+.bar-row{display:flex;align-items:center;gap:14px;margin:2px 0 10px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{background:none;border:0;padding:8px 18px;cursor:pointer;color:var(--ink-2);font-size:16px}
+.seg button.on{background:var(--surface-2);color:var(--ink);font-weight:600;box-shadow:inset 0 -2px 0 var(--brand)}
+.key{display:inline-flex;align-items:center;gap:7px;color:var(--ink-2);font-size:14.5px}
+.key i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 12px 8px;font-weight:500}
+th.r,td.r{text-align:right}
+td{padding:9px 12px;border-top:1px solid var(--hair);vertical-align:middle}
+tr.row{cursor:pointer}tr.row:hover td{background:#ffffff08}
+.rank{font-size:21px;font-weight:600;color:var(--ink-2);width:54px}
+.who b{font-size:19px;font-weight:600;display:block;line-height:1.2}
+.who .mono{color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:13.5px;border:1px solid var(--hair);color:var(--ink-2);background:var(--surface-2);white-space:nowrap;vertical-align:middle}
+.chip.none{color:var(--muted)}
+.chip.both{border-color:#fab21966;color:#f3d48d}
+.chip.partial{border-color:#ffffff33}
+.chip.out{background:#3987e522;border-color:#3987e566;color:#cfe2fb;font-weight:600}
+.money{font-size:19px;font-weight:600}
+.stack{display:flex;gap:2px;height:16px;align-items:stretch;min-width:240px}
+.stack i{display:block;border-radius:0 4px 4px 0;min-width:0}
+.stack .a{background:var(--risk)}.stack .l{background:var(--locked);background-image:repeating-linear-gradient(135deg,transparent 0 5px,#0000003a 5px 7px)}
+.biggest{color:var(--ink-2);font-size:15px;max-width:430px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{border:1px solid var(--hair);background:var(--surface-2);border-radius:9px;padding:6px 14px;cursor:pointer;font-size:15px;white-space:nowrap}
+.btn:hover{border-color:#ffffff44}
+.btn.primary{background:var(--brand);border-color:var(--brand);font-weight:600}
+.btn[disabled]{opacity:.45;cursor:default}
+
+/* drawer */
+#shade{position:fixed;inset:0;background:#000a;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#shade.open{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:1060px;background:#141413;border-left:1px solid var(--hair);transform:translateX(102%);transition:transform .24s cubic-bezier(.2,.8,.2,1);z-index:21;overflow-y:auto;padding:0 0 170px}
+#drawer.open{transform:none}
+.dhead{position:sticky;top:0;background:#141413;z-index:2;padding:18px 28px 14px;border-bottom:1px solid var(--hair);display:flex;gap:14px;align-items:flex-start}
+.dhead h2{margin:0;font-size:30px;font-weight:600;line-height:1.1}
+.dhead .sub{color:var(--ink-2);font-size:15.5px;margin-top:6px}
+.dbody{padding:16px 28px}
+.cells{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.cells.three{grid-template-columns:repeat(3,1fr)}
+.cell{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:12px 16px}
+.cell b{display:block;font-size:28px;font-weight:600;line-height:1.05;margin-top:8px}
+.cell small{display:block;color:var(--ink-2);font-size:14px;margin-top:6px}
+.note{border-left:3px solid var(--warn);background:#fab2190f;padding:10px 14px;border-radius:0 10px 10px 0;color:var(--ink-2);font-size:15.5px;margin:0 0 14px}
+.note.plain{border-color:var(--axis);background:#ffffff07}
+h3{font-size:14px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);font-weight:500;margin:20px 0 8px}
+.pos td{padding:10px 10px}
+.pos .t{font-size:16.5px;font-weight:600;line-height:1.25}
+.pos .t + div{margin-top:4px}
+.dumb{position:relative;width:190px;height:34px}
+.dumb .track{position:absolute;left:0;right:0;top:11px;height:2px;background:var(--axis)}
+.dumb .link{position:absolute;top:10px;height:4px;border-radius:2px}
+.dumb .p{position:absolute;top:6px;width:12px;height:12px;border-radius:50%;margin-left:-6px;border:2px solid #141413}
+.dumb .p.paid{background:#141413;border-color:var(--ink-2)}
+.dumb .lab{position:absolute;top:20px;font-size:12.5px;color:var(--ink-2);white-space:nowrap}
+
+/* copy check */
+.dollar{position:relative;height:44px;border-radius:8px;overflow:hidden;display:flex;gap:2px;margin:8px 0 6px}
+.dollar div{display:flex;align-items:center;justify-content:center;font-size:14.5px;white-space:nowrap;overflow:hidden;min-width:0}
+.dollar .paid{background:#2f2f2c;color:var(--ink-2)}.dollar .moved{background:var(--risk-dim);color:#cfe2fb}.dollar .left{background:var(--risk);color:#fff;font-weight:600}
+.dollar .under{background:#5b2a16;color:#f6c9b4}.dollar .rest{background:#232321}
+.scale{display:flex;justify-content:space-between;color:var(--muted);font-size:12.5px}
+.verdict{font-size:19px;line-height:1.35;margin:12px 0 4px}
+.verdict b{font-weight:600}
+.two{display:grid;grid-template-columns:400px 1fr;gap:16px;margin-top:6px}
+.panel{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:12px 16px}
+.ladder{font-variant-numeric:tabular-nums;font-size:15px}
+.ladder .lv{display:grid;grid-template-columns:70px 1fr 90px;gap:10px;align-items:center;height:25px}
+.ladder .lv i{display:block;height:12px;border-radius:0 3px 3px 0}
+.ladder .ask i{background:var(--side-b)}.ladder .bid i{background:var(--side-a)}
+.ladder .mid{border-top:1px dashed var(--axis);margin:5px 0;padding-top:5px;color:var(--muted);font-size:13.5px}
+svg text{font-family:var(--sans);fill:var(--muted);font-size:12.5px}
+.tip{position:absolute;pointer-events:none;background:#000d;border:1px solid var(--hair);border-radius:8px;padding:6px 10px;font-size:13.5px;white-space:nowrap;display:none;z-index:5}
+
+/* agree / disagree */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:14px;padding:14px 18px;margin-bottom:12px}
+.card .t{font-size:19px;font-weight:600;line-height:1.25}
+.card .meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:7px 0 10px;color:var(--ink-2);font-size:15px}
+.holder{cursor:pointer;display:grid;grid-template-columns:210px 1fr 110px 96px;gap:12px;align-items:center;height:30px;font-size:15.5px}
+.holder i{display:block;height:12px;border-radius:0 4px 4px 0;background:var(--risk)}
+.holder.b i{background:var(--side-b)}
+.holder:hover b{text-decoration:underline}
+.split{display:flex;gap:2px;height:14px;margin:4px 0 8px}
+.split i{display:block;border-radius:3px}.split .a{background:var(--side-a)}.split .b{background:var(--side-b)}
+.vs{font-size:13px;letter-spacing:1.3px;color:var(--muted);margin:6px 0 2px;text-transform:uppercase}
+
+/* changes */
+.counts{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:4px 0 14px}
+.kind{display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:600;white-space:nowrap}
+.kind svg{flex:none}
+tr.unsure td{opacity:.55}
+.delta{display:grid;grid-template-columns:1fr 1fr;width:260px;height:14px}
+.delta .neg{display:flex;justify-content:flex-end}.delta i{display:block;height:14px}
+.delta .neg i{background:var(--side-b);border-radius:4px 0 0 4px}.delta .pos i{background:var(--side-a);border-radius:0 4px 4px 0}
+.delta .pos{border-left:1px solid var(--axis)}
+
+/* costs */
+.meter{height:22px;border-radius:6px;background:#17365f;position:relative;overflow:hidden;margin:10px 0 6px}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--risk);border-radius:0 4px 4px 0}
+.meter.over i{background:var(--crit)}
+.costbig{font-size:46px;font-weight:600;line-height:1}
+.costbig small{font-size:19px;color:var(--ink-2);font-weight:400}
+.form{display:grid;grid-template-columns:1fr 130px;gap:9px 14px;align-items:center;font-size:16px}
+.form input{background:#0f0f0e;border:1px solid var(--hair);border-radius:8px;padding:7px 10px;width:130px;text-align:right;font-variant-numeric:tabular-nums}
+.form small{color:var(--muted);display:block;font-size:13.5px}
+.limits{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.limit{display:flex;gap:14px}
+.limit .n{font-size:30px;font-weight:600;color:var(--brand-2);line-height:1;min-width:30px}
+.limit b{display:block;font-size:18.5px;margin-bottom:3px}
+.limit span{color:var(--ink-2);font-size:15.5px}
+.empty{padding:60px 0;text-align:center;color:var(--ink-2);font-size:19px}
+</style>
+</head>
+<body>
+<header>
+  <div class="mark"><i></i><i></i><i></i></div>
+  <div><h1>Top Traders Tracker</h1><div class="tag">What Polymarket's most profitable wallets are holding right now. A record, not a signal.</div></div>
+  <div class="grow"></div>
+  <span class="pill">Data <b>Predictefy API</b></span>
+  <span class="pill" id="snapPill">Snapshot <b>none yet</b></span>
+  <span class="pill"><span class="dot" id="dot"></span><span id="status">Connecting…</span></span>
+</header>
+<div id="banner"></div>
+<section class="overview" id="overview"></section>
+<nav id="nav"></nav>
+<main id="main"><div class="empty">Connecting…</div></main>
+<div id="shade"></div>
+<aside id="drawer"></aside>
+<script>
+const $ = (selector, root = document) => root.querySelector(selector);
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const usd = n => `${n < 0 ? '−' : ''}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
+const usdShort = n => { const a = Math.abs(n), sign = n < 0 ? '−' : ''; return a >= 1e6 ? `${sign}$${(a / 1e6).toFixed(a >= 1e8 ? 1 : 2)}M` : a >= 1e4 ? `${sign}$${Math.round(a / 1e3)}K` : usd(n); };
+const cents = p => `${(p * 100).toFixed(1)}¢`;
+const int = n => Math.round(n).toLocaleString('en-US');
+const pct = (n, digits = 0) => `${(n * 100).toFixed(digits)}%`;
+const when = iso => iso ? new Date(iso).toLocaleString('en-GB', {timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false}) + ' UTC' : '';
+const clock = iso => iso ? new Date(iso).toLocaleTimeString('en-GB', {timeZone: 'UTC', hour12: false}) + ' UTC' : '';
+const WINDOW_NAMES = {week: 'This week', month: 'This month', all: 'All time'};
+const ui = {tab: 'board', board: 'all', drawer: null, copy: null, copyData: null, copyBusy: false};
+let S = null, shown = '';
+
+async function load() {
+  try {
+    const next = await (await fetch('/api/state', {cache: 'no-store'})).json();
+    const stamp = JSON.stringify([next.view?.takenAt, next.busy, next.progress, next.error, next.upgrade, next.config, next.counters.credits]);
+    S = next;
+    if (stamp !== shown) { shown = stamp; render(); }
+  } catch { $('#status').textContent = 'The tracker is not running'; $('#dot').className = 'dot bad'; }
+  setTimeout(load, S?.busy ? 1500 : 8000);
+}
+
+function render() { chrome(); overview(); nav(); main(); if (ui.drawer) drawer(); }
+
+function chrome() {
+  const v = S.view;
+  $('#snapPill').innerHTML = `Snapshot <b>${v ? esc(when(v.takenAt)) : 'none yet'}</b>`;
+  const dot = $('#dot'), status = $('#status');
+  if (S.busy) { dot.className = 'dot busy'; status.textContent = S.progress ? `Reading ${S.progress.done + 1} of ${S.progress.total}: ${S.progress.name}` : 'Reading the leaderboards…'; }
+  else if (S.error) { dot.className = 'dot bad'; status.textContent = `Stopped: ${S.error}`; }
+  else if (S.replay) { dot.className = 'dot replay'; status.textContent = 'Replay: saved snapshot'; }
+  else { dot.className = 'dot'; const hours = S.nextRefreshAt ? Math.max(0, (Date.parse(S.nextRefreshAt) - Date.now()) / 3600e3) : null; status.textContent = hours === null ? 'Ready' : `Next refresh in ${hours < 1 ? Math.round(hours * 60) + ' min' : hours.toFixed(1) + ' h'}`; }
+  $('#banner').innerHTML = S.upgrade ? `<div class="banner"><b>${esc(S.upgrade.message)}</b> Predictefy answered ${esc(S.upgrade.status)} ${esc(S.upgrade.code)} for ${esc(S.upgrade.what)}. <a href="${esc(S.upgrade.url)}" target="_blank" rel="noopener">See the plans →</a></div>` : '';
+}
+
+function overview() {
+  const v = S.view; if (!v) { $('#overview').innerHTML = ''; return; }
+  const a = v.stats.all, share = a.profit > 0 ? a.atRisk / a.profit : 0;
+  $('#overview').innerHTML = `
+    <div class="tile hero" id="hero">
+      <div class="label">All-time top ${a.wallets} · what they made, what they have riding now</div>
+      <div class="pair">
+        <div class="big num">${usdShort(a.profit)}<small>profit, Polymarket's figure</small></div><div class="bar" style="width:100%"></div>
+        <div class="big num">${usd(a.atRisk)}<small>at risk now</small></div><div class="bar now" style="width:${Math.max(0.1, share * 100).toFixed(3)}%"></div>
+      </div>
+      <div class="foot">${a.nothingOpen} of ${a.wallets} hold nothing open${a.partial ? ` · ${a.partial} read in part` : ''} · bars to scale</div>
+    </div>
+    <div class="tile stat"><div class="label">Wallets tracked</div><b class="num">${v.totals.wallets}</b><span class="sub">week ${v.boards.week.length} · month ${v.boards.month.length} · all time ${v.boards.all.length}</span><span class="src">/v1/traders/polymarket/leaderboard</span></div>
+    <div class="tile stat"><div class="label">Nothing open</div><b class="num">${v.totals.nothingOpen} <small>of ${v.totals.wallets}</small></b><span class="sub">no position worth a dollar</span><span class="src">/v1/accounts/polymarket/{wallet}/positions</span></div>
+    <div class="tile stat"><div class="label">On both sides</div><b class="num">${usdShort(v.totals.locked)}</b><span class="sub">in ${v.totals.bothSides} wallets · pays the same whatever happens</span><span class="src">netted from positions</span></div>
+    <div class="tile stat"><div class="label">Credits, last refresh</div><b class="num">${int(v.usage?.credits || 0)} <small>in ${int(v.usage?.requests || 0)} requests</small></b><span class="sub">≈ ${int(v.cost.perMonth)} a month · free plan ${int(v.cost.freeCredits)}</span><span class="src">x-credits-charged header</span></div>`;
+}
+
+function nav() {
+  const v = S.view, c = v?.consensus, d = v?.changes;
+  const tabs = [['board', 'Leaderboard', v?.totals.wallets], ['agree', 'Agree & disagree', c ? c.agree.length + c.disagree.length : null], ['changes', 'What changed', d ? d.changes.filter(x => !x.unsure).length : null], ['costs', 'What this costs', null], ['limits', 'What it can\'t tell you', null]];
+  $('#nav').innerHTML = tabs.map(([id, name, n]) => `<button data-tab="${id}" class="${ui.tab === id ? 'on' : ''}">${name}${n === null || n === undefined ? '' : `<em>${n}</em>`}</button>`).join('');
+}
+
+function main() {
+  const v = S.view;
+  if (!v) { $('#main').innerHTML = `<div class="empty">${S.busy ? 'Reading the leaderboards and each wallet\'s positions. The first refresh takes about two minutes.' : 'No snapshot yet.'}</div>`; return; }
+  $('#main').innerHTML = {board, agree, changes, costs, limits}[ui.tab](v);
+}
+
+const rankChips = t => ['week', 'month', 'all'].filter(w => t.ranks[w]).map(w => `<span class="chip">${WINDOW_NAMES[w]} #${t.ranks[w]}</span>`).join(' ');
+const badges = t => [
+  t.error ? `<span class="chip partial">not read: ${esc(t.error)}</span>` : '',
+  !t.error && t.atRisk < 1 && t.locked < 1 ? '<span class="chip none">nothing open</span>' : '',
+  t.locked >= 100 ? `<span class="chip both">both sides ${usdShort(t.locked)}</span>` : '',
+  t.partial ? '<span class="chip partial">partial read</span>' : '',
+].join(' ');
+
+function board(v) {
+  const rows = v.boards[ui.board].map(w => v.traders.find(t => t.wallet === w));
+  const max = Math.max(1, ...rows.map(t => t.atRisk + t.locked)), s = v.stats[ui.board];
+  return `
+  <div class="bar-row">
+    <div class="seg" id="boardSeg">${Object.entries(WINDOW_NAMES).map(([id, name]) => `<button data-board="${id}" class="${ui.board === id ? 'on' : ''}">${name}</button>`).join('')}</div>
+    <span class="ink2">Top ${s.wallets}: made <b style="color:#fff">${usdShort(s.profit)}</b>, at risk now <b style="color:#fff">${usdShort(s.atRisk)}</b>, ${s.nothingOpen} hold nothing</span>
+    <span class="grow"></span>
+    <span class="key"><i style="background:var(--risk)"></i>At risk on an outcome</span>
+    <span class="key"><i style="background:var(--locked)"></i>Both sides of one market</span>
+  </div>
+  <table id="boardTable"><thead><tr class="label"><th>#</th><th>Wallet</th><th class="r">Profit · Polymarket's figure</th><th class="r">At risk now</th><th>Open now</th><th class="r">Positions</th><th>Biggest position</th></tr></thead><tbody>
+  ${rows.map(t => { const top = t.positions.filter(p => !p.redeemable).sort((a, b) => b.netValue - a.netValue)[0]; return `
+    <tr class="row" data-trader="${esc(t.wallet)}">
+      <td class="rank num">${t.ranks[ui.board]}</td>
+      <td class="who"><b>${esc(t.name)}</b><span class="mono">${esc(t.short)}</span> ${badges(t)}</td>
+      <td class="r money num">${usd(t.profit[ui.board] || 0)}</td>
+      <td class="r money num">${t.atRisk >= 1 ? usd(t.atRisk) : '<span class="muted">$0</span>'}</td>
+      <td><div class="stack" title="${usd(t.atRisk)} at risk, ${usd(t.locked)} on both sides"><i class="a" style="width:${(t.atRisk / max * 100).toFixed(2)}%"></i><i class="l" style="width:${(t.locked / max * 100).toFixed(2)}%"></i></div></td>
+      <td class="r num">${t.count || '<span class="muted">0</span>'}</td>
+      <td><div class="biggest">${top && top.netValue >= 100 ? `<b style="color:#fff">${usdShort(top.netValue)}</b> ${esc(top.outcome)} · ${esc(top.title)}` : '<span class="muted">—</span>'}</div></td>
+    </tr>`; }).join('')}
+  </tbody></table>
+  <p class="src" style="margin-top:14px">Ranks and profit: GET /v1/traders/polymarket/leaderboard?by=profit&amp;window=${ui.board} (1 credit) · Open positions: GET /v1/accounts/polymarket/{wallet}/positions (3 credits a page) · read ${esc(when(v.takenAt))}</p>`;
+}
+
+function dumb(p) {
+  const a = Math.min(1, Math.max(0, p.avg)), b = Math.min(1, Math.max(0, p.mark)), up = b >= a, lo = Math.min(a, b) * 100, hi = Math.max(a, b) * 100;
+  const color = up ? 'var(--good)' : 'var(--crit)', leftLab = a <= b;
+  return `<div class="dumb"><div class="track"></div><div class="link" style="left:${lo}%;width:${hi - lo}%;background:${color}"></div><div class="p paid" style="left:${a * 100}%"></div><div class="p" style="left:${b * 100}%;background:${color}"></div>
+    <div class="lab" style="${leftLab ? `right:${100 - lo + 2}%` : `left:${hi + 2}%`};display:none"></div></div>`;
+}
+const pnl = n => Math.abs(n) < 0.5 ? '<span class="muted">$0</span>' : `<span class="${n >= 0 ? 'up' : 'down'}">${n >= 0 ? '▲' : '▼'}</span> ${usd(Math.abs(n))}`;
+
+function drawer() {
+  const v = S.view, t = v.traders.find(x => x.wallet === ui.drawer); if (!t) return;
+  const profits = ['week', 'month', 'all'].filter(w => t.ranks[w]).map(w => `${WINDOW_NAMES[w].toLowerCase()} ${usd(t.profit[w] || 0)}`).join(' · ');
+  const head = `<div class="dhead"><div style="flex:1"><h2>${esc(t.name)}</h2><div class="sub"><span class="mono">${esc(t.short)}</span> · ${rankChips(t)}</div><div class="sub">Profit on Polymarket's board: ${profits}</div></div><button class="btn" data-close>Close ✕</button></div>`;
+  if (ui.copy) { $('#drawer').innerHTML = head + copyView(t); bindChart(); return; }
+  const open = t.positions.filter(p => !p.redeemable), settled = t.positions.filter(p => p.redeemable);
+  $('#drawer').innerHTML = head + `<div class="dbody">
+    <div class="cells">
+      <div class="cell"><div class="label">At risk now</div><b class="num">${usd(t.atRisk)}</b><small>${t.count} position${t.count === 1 ? '' : 's'} over $100</small></div>
+      <div class="cell"><div class="label">On both sides</div><b class="num">${usd(t.locked)}</b><small>pays the same whatever happens</small></div>
+      <div class="cell"><div class="label">Paper result, open</div><b class="num">${pnl(t.unrealized)}</b><small>Polymarket's figure, not ours</small></div>
+      <div class="cell"><div class="label">Rows read</div><b class="num">${int(t.rowCount || 0)}</b><small>${t.pages || 0} page${t.pages === 1 ? '' : 's'} · ${(t.pages || 0) * 3} credits</small></div>
+    </div>
+    ${t.partial ? `<div class="note"><b>Partial read.</b> This wallet has more rows than the ${t.pages} pages read. Rows come largest first, so each unread position holds at most ${int(t.unreadMaxShares)} shares, which is at most ${usd(t.unreadMaxShares)}.</div>` : ''}
+    ${t.atRisk < 1 && t.locked < 1 ? `<div class="note plain">Nothing open. Every row Predictefy returned for this wallet is a settled or empty position.</div>` : ''}
+    ${open.length ? `<h3>Open positions · after netting</h3><table class="pos"><thead><tr class="label"><th>Market</th><th class="r">Shares</th><th>Paid → now</th><th class="r">Value</th><th class="r">Paper result</th><th></th></tr></thead><tbody>
+    ${open.slice(0, 60).map(p => `<tr data-pos="${esc(p.marketId)}">
+      <td><div class="t">${esc(p.title)}</div><div><span class="chip out">${esc(p.outcome)}</span> ${p.bothSides ? `<span class="chip both">both sides: ${int(p.size)} ${esc(p.outcome)} + ${int(p.otherSize)} ${esc(p.otherOutcome)}</span>` : ''} ${p.negRisk ? '<span class="chip" title="Part of an event with several outcomes. The average entry can mislead here.">multi-outcome event</span>' : ''}</div></td>
+      <td class="r num">${p.bothSides ? `<b>${int(p.netSize)}</b><br><span class="muted" style="font-size:13.5px">net</span>` : int(p.netSize)}</td>
+      <td>${p.netSize >= 1 ? `${dumb(p)}<div class="num ink2" style="font-size:13.5px;margin-top:-8px">${cents(p.avg)} → <b style="color:#fff">${cents(p.mark)}</b></div>` : `<span class="muted" style="font-size:14.5px">${int(p.lockedShares)} pairs = ${usd(p.lockedValue)}</span>`}</td>
+      <td class="r money num">${usd(p.netValue)}</td>
+      <td class="r num" style="white-space:nowrap">${pnl(p.unrealized)}</td>
+      <td class="r">${p.netSize >= 1 ? `<button class="btn" data-copy="${esc(p.marketId)}">Copy check</button>` : ''}</td>
+    </tr>`).join('')}</tbody></table>${open.length > 60 ? `<p class="muted">Showing the 60 largest of ${open.length}.</p>` : ''}` : ''}
+    ${settled.length ? `<h3>Settled, not yet cashed in</h3><p class="ink2">${settled.length} position${settled.length === 1 ? '' : 's'} worth ${usd(settled.reduce((s, p) => s + p.grossValue, 0))}. Not counted as open.</p>` : ''}
+    <p class="src" style="margin-top:16px">GET /v1/accounts/polymarket/${esc(t.short)}/positions?limit=100 · title and outcome from raw · read ${esc(when(v.takenAt))}</p>
+    <p class="muted" style="font-size:14.5px">A wallet is not a person: one trader can use several, and the leaderboard ranks wallets. This shows what the wallet holds, not when it will sell.</p>
+  </div>`;
+}
+
+function copyView(t) {
+  const p = t.positions.find(x => x.marketId === ui.copy), d = ui.copyData;
+  const title = `<button class="btn" data-back>← Back to the book</button><h3 style="margin-top:14px">Copy check · their price against yours</h3><div class="t" style="font-size:22px;font-weight:600;line-height:1.25">${esc(p.title)}</div><div style="margin:6px 0 12px"><span class="chip out">${esc(p.outcome)}</span> <span class="ink2">${esc(t.name)} holds ${int(p.netSize)} shares, worth ${usd(p.netValue)}</span> ${p.negRisk ? '<span class="chip">multi-outcome event: the average entry can mislead</span>' : ''}</div>`;
+  if (ui.copyBusy || !d) return `<div class="dbody">${title}<div class="empty">Reading the live order book and the price history from Predictefy…</div></div>`;
+  if (d.error) return `<div class="dbody">${title}<div class="note">${esc(d.error)}</div></div>`;
+  const c = d.check, q = c?.quote;
+  let body = '';
+  if (q) {
+    const entry = c.entry, mine = q.average, up = mine >= entry;
+    const segs = up
+      ? `<div class="paid" style="width:${entry * 100}%">they paid ${cents(entry)}</div><div class="moved" style="width:${(mine - entry) * 100}%">already moved ${cents(mine - entry)}</div><div class="left" style="width:${Math.max(1.2, (1 - mine) * 100)}%">${1 - mine >= 0.07 ? `left ${cents(1 - mine)}` : ''}</div>`
+      : `<div class="paid" style="width:${mine * 100}%">you'd pay ${cents(mine)}</div><div class="under" style="width:${(entry - mine) * 100}%">they are down ${cents(entry - mine)} a share</div><div class="rest" style="width:${(1 - entry) * 100}%"></div>`;
+    body = `
+    <div class="cells three">
+      <div class="cell"><div class="label">They paid, on average</div><b class="num">${cents(entry)}</b><small>from the wallet's position row</small></div>
+      <div class="cell"><div class="label">Best ask right now</div><b class="num">${cents(q.bestAsk)}</b><small>live order book</small></div>
+      <div class="cell"><div class="label">Your average for ${usd(d.copyUsd)}</div><b class="num">${cents(mine)}</b><small>${q.complete ? `${int(q.shares)} shares, walking the asks` : `only ${usd(q.spent)} of it fits on the asks read`}</small></div>
+    </div>
+    <div class="label">Each share pays $1 if it happens. Where the dollar stands:</div>
+    <div class="dollar" id="dollar">${segs}</div>
+    <div class="scale"><span>0¢</span><span>25¢</span><span>50¢</span><span>75¢</span><span>$1</span></div>
+    <div class="verdict" id="verdict">${up
+      ? `If it pays out, they make <b>${pct(c.theirReturn)}</b> on their stake. Buying now, you'd make <b>${pct(c.yourReturn, c.yourReturn < 0.1 ? 1 : 0)}</b>. Same position, a different bet.`
+      : `You'd get in <b>${cents(entry - mine)}</b> a share cheaper than they did. That is because the market has moved against them, not because it is a bargain.`}</div>`;
+  } else body = `<div class="note">${esc(c?.reason || d.errors?.join(' · ') || 'No quote available')}</div>`;
+  const book = d.book ? `<div class="panel"><div class="label">Live order book</div><div class="ladder" id="ladder" style="margin-top:8px">${ladder(d.book)}</div><div class="src" style="margin-top:8px">GET /api/polymarket/fetchOrderBook · 5 credits<br>read ${esc(clock(d.book.asOf || d.capturedAt))}</div></div>` : '<div class="panel muted">No order book.</div>';
+  const chart = d.series?.length > 1 ? `<div class="panel" style="position:relative"><div class="label">Price, last ${d.historyDays} days, hourly</div><div id="chartBox" style="position:relative;margin-top:6px">${priceChart(d.series, p.avg)}<div class="tip" id="tip"></div></div><div class="src">GET /api/polymarket/fetchOHLCV · resolution 1h · 5 credits${d.seriesSource ? ` · source ${esc(d.seriesSource.source)}, ${esc(d.seriesSource.sourceType)}` : ''}</div><div class="muted" style="font-size:13.5px;margin-top:4px">A position row carries an average price, not a date. The dashed line is what they paid, not when.</div></div>` : `<div class="panel muted">No price history for this outcome${d.errors?.length ? `: ${esc(d.errors.join(' · '))}` : ''}.</div>`;
+  return `<div class="dbody">${title}${body}<div class="two">${book}${chart}</div>
+    <p class="muted" style="font-size:14.5px;margin-top:14px">${d.recorded ? `Recorded ${esc(when(d.capturedAt))}. ` : `Read ${esc(when(d.capturedAt))}. `}This is a price comparison, not advice. It cannot tell you when they will sell.</p></div>`;
+}
+function ladder(book) {
+  const asks = book.asks.slice(0, 5).reverse(), bids = book.bids.slice(0, 5), max = Math.max(1, ...asks.map(l => l.size), ...bids.map(l => l.size));
+  const row = (l, cls) => `<div class="lv ${cls}"><span>${cents(l.price)}</span><span><i style="width:${Math.max(1.5, l.size / max * 100)}%"></i></span><span style="text-align:right" class="ink2">${int(l.size)}</span></div>`;
+  const spread = book.asks[0] && book.bids[0] ? `spread ${cents(book.asks[0].price - book.bids[0].price)}` : '';
+  return `<div class="lv muted" style="font-size:12.5px;height:20px"><span>ASK</span><span></span><span style="text-align:right">shares</span></div>${asks.map(l => row(l, 'ask')).join('')}<div class="mid">${spread}</div>${bids.map(l => row(l, 'bid')).join('')}`;
+}
+let chartState = null;
+function priceChart(series, entry) {
+  const W = 560, H = 250, L = 44, R = 64, T = 12, B = 26, xs = series.map(s => s[0]), x0 = xs[0], x1 = xs.at(-1);
+  const X = t => L + (t - x0) / Math.max(1, x1 - x0) * (W - L - R), Y = p => T + (1 - p) * (H - T - B);
+  const path = series.map((s, i) => `${i ? 'L' : 'M'}${X(s[0]).toFixed(1)},${Y(s[1]).toFixed(1)}`).join('');
+  const last = series.at(-1), days = [];
+  for (let t = Math.ceil(x0 / 864e5) * 864e5; t <= x1; t += 864e5 * 2) days.push(t);
+  chartState = {series, X, Y, W, H, L, R, T, B};
+  const entryY = Y(entry), lastY = Y(last[1]), clash = Math.abs(entryY - lastY) < 16;
+  return `<svg id="priceChart" viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
+    ${[0, .25, .5, .75, 1].map(p => `<line x1="${L}" x2="${W - R}" y1="${Y(p)}" y2="${Y(p)}" stroke="${p === 0 ? '#383835' : '#2c2c2a'}" stroke-width="1"/><text x="${L - 8}" y="${Y(p) + 4}" text-anchor="end">${p === 1 ? '$1' : Math.round(p * 100) + '¢'}</text>`).join('')}
+    ${days.map(t => `<text x="${X(t)}" y="${H - 6}" text-anchor="middle">${new Date(t).toLocaleDateString('en-GB', {timeZone: 'UTC', month: 'short', day: 'numeric'})}</text>`).join('')}
+    <line x1="${L}" x2="${W - R}" y1="${entryY}" y2="${entryY}" stroke="#c3c2b7" stroke-width="1.5" stroke-dasharray="6 5"/>
+    <text x="${L + 6}" y="${entryY + (entry > 0.85 ? 16 : -7)}" style="fill:#c3c2b7">their average entry ${cents(entry)}</text>
+    <path d="${path}" fill="none" stroke="#3987e5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${X(last[0])}" cy="${lastY}" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+    <text x="${X(last[0]) + 10}" y="${lastY + (clash ? (lastY > entryY ? 16 : -8) : 4)}" style="fill:#fff;font-size:14px;font-weight:600">${cents(last[1])}</text>
+    <line id="cross" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#898781" stroke-width="1" style="display:none"/><circle id="crossDot" r="4" fill="#fff" style="display:none"/>
+  </svg>`;
+}
+function bindChart() {
+  const svg = $('#priceChart'), tip = $('#tip'); if (!svg || !chartState) return;
+  const {series, X, Y, W} = chartState;
+  svg.addEventListener('mousemove', e => {
+    const box = svg.getBoundingClientRect(), x = (e.clientX - box.left) / box.width * W;
+    let best = series[0]; for (const s of series) if (Math.abs(X(s[0]) - x) < Math.abs(X(best[0]) - x)) best = s;
+    const cross = $('#cross'), dot = $('#crossDot');
+    cross.setAttribute('x1', X(best[0])); cross.setAttribute('x2', X(best[0])); cross.style.display = ''; dot.setAttribute('cx', X(best[0])); dot.setAttribute('cy', Y(best[1])); dot.style.display = '';
+    tip.style.display = 'block'; tip.innerHTML = `<b>${cents(best[1])}</b> · ${esc(when(new Date(best[0]).toISOString()))}`;
+    tip.style.left = `${Math.min(box.width - 190, X(best[0]) / W * box.width + 12)}px`; tip.style.top = `${Y(best[1]) / chartState.H * box.height - 38}px`;
+  });
+  svg.addEventListener('mouseleave', () => { tip.style.display = 'none'; $('#cross').style.display = 'none'; $('#crossDot').style.display = 'none'; });
+}
+
+function agree(v) {
+  const c = v.consensus, min = usd(S.config.minValue);
+  const ends = e => e.endDate ? ` · ends ${esc(new Date(e.endDate + 'T00:00:00Z').toLocaleDateString('en-GB', {timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric'}))}` : '';
+  const holder = (h, max, cls = '') => `<div class="holder ${cls}" data-trader="${esc(h.wallet)}" title="Open this wallet's book"><span><b>${esc(h.name)}</b></span><span><i style="width:${Math.max(1, h.value / max * 100)}%"></i></span><span class="num" style="text-align:right;font-weight:600">${usd(h.value)}</span><span class="num ink2" style="text-align:right">paid ${cents(h.avg)}</span></div>`;
+  return `<p class="ink2" style="margin:2px 0 12px">Positions of ${min} or more, after netting out both-sides holdings. ${c.held} outcomes qualify across the ${v.totals.wallets} wallets.</p>
+  <div class="cols">
+    <div id="agreeCol"><h3 style="margin-top:0">Same outcome, held by two or more wallets · ${c.agree.length}</h3>
+      ${c.agree.map(e => { const max = Math.max(...e.holders.map(h => h.value)); return `<div class="card" data-agree="${esc(e.outcomeId)}"><div class="t">${esc(e.title)}</div>
+        <div class="meta"><span class="chip out">${esc(e.outcome)}</span><span>now <b style="color:#fff">${cents(e.mark)}</b></span><span>${e.holders.length} wallets · ${usd(e.total)}</span><span class="muted">${ends(e).slice(3)}</span>${e.negRisk ? '<span class="chip">multi-outcome event</span>' : ''}</div>
+        ${e.holders.map(h => holder(h, max)).join('')}</div>`; }).join('') || '<div class="card muted">No outcome is held by two tracked wallets at this size.</div>'}
+    </div>
+    <div id="disagreeCol"><h3 style="margin-top:0">Same market, opposite sides · ${c.disagree.length}</h3>
+      ${c.disagree.map(m => { const [a, b] = m.sides, max = Math.max(...m.sides.flatMap(s => s.holders.map(h => h.value))); return `<div class="card" data-disagree="${esc(m.marketId)}"><div class="t">${esc(m.title)}</div>
+        <div class="meta"><span>${usd(m.total)} between them</span><span class="muted">${ends(m).slice(3)}</span>${m.negRisk ? '<span class="chip">multi-outcome event</span>' : ''}</div>
+        <div class="split"><i class="a" style="width:${a.total / m.total * 100}%"></i><i class="b" style="width:${b.total / m.total * 100}%"></i></div>
+        <div class="vs"><span class="chip out">${esc(a.outcome)}</span> now ${cents(a.mark)}</div>${a.holders.map(h => holder(h, max)).join('')}
+        <div class="vs" style="margin-top:10px"><span class="chip" style="background:#d9592622;border-color:#d9592677;color:#f6c9b4;font-weight:600">${esc(b.outcome)}</span> now ${cents(b.mark)}</div>${b.holders.map(h => holder(h, max, 'b')).join('')}</div>`; }).join('') || '<div class="card muted">No market has tracked wallets on opposite sides at this size.</div>'}
+    </div>
+  </div>
+  <p class="src" style="margin-top:8px">Built from GET /v1/accounts/polymarket/{wallet}/positions for all ${v.totals.wallets} wallets · prices are the mark price in each position row</p>`;
+}
+
+const KINDS = {
+  opened: ['Opened', 'M3 8h10M8 3v10', 'var(--side-a)'], added: ['Added', 'M8 13V3M4 7l4-4 4 4', 'var(--side-a)'], reduced: ['Reduced', 'M8 3v10M4 9l4 4 4-4', 'var(--side-b)'],
+  closed: ['Gone: sold or settled', 'M4 4l8 8M12 4l-8 8', 'var(--side-b)'], settled: ['Settled', 'M3 8l3.5 3.5L13 5', 'var(--ink-2)'], flipped: ['Switched sides', 'M3 6h10l-3-3M13 10H3l3 3', 'var(--ink-2)'],
+  unpaired: ['Both-sides pairs undone', 'M3 8h10', 'var(--side-b)'], paired: ['Both-sides pairs added', 'M3 6h10M3 10h10', 'var(--ink-2)'],
+};
+const kindChip = k => { const [name, d, color] = KINDS[k]; return `<span class="kind"><svg width="18" height="18" viewBox="0 0 16 16"><path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>${name}</span>`; };
+function changes(v) {
+  const d = v.changes;
+  if (!d) return '<div class="empty">Only one snapshot so far. The next refresh will show what opened, closed, grew and shrank.</div>';
+  const max = Math.max(1, ...d.changes.map(c => Math.abs(c.usd))), n = d.counts;
+  const tile = (label, value, sub) => `<div class="tile stat" style="padding:12px 16px"><div class="label">${label}</div><b class="num" style="font-size:30px;margin-top:8px">${value}</b><span class="sub">${sub}</span></div>`;
+  const list = people => people.map(t => `<b style="color:#fff">${esc(t.name)}</b> <span class="muted">(${['week', 'month', 'all'].filter(w => t.ranks[w]).map(w => `${w} #${t.ranks[w]}`).join(', ')})</span>`).join(', ');
+  return `<p class="ink2" style="margin:2px 0 10px"><b style="color:#fff">${d.hours.toFixed(1)} hours</b> between snapshots: ${esc(when(d.from))} → ${esc(when(d.to))}. Changes of ${usd(S.config.minValue)} or more.</p>
+  <div class="counts" id="changeCounts">${tile('Opened', n.opened, 'new positions')}${tile('Added', n.added, 'made bigger')}${tile('Reduced', n.reduced, 'made smaller')}${tile('Gone', n.closed, 'sold, or settled')}${tile('Pairs undone', n.unpaired, 'both-sides piles cut')}${tile('Unsure', n.unsure, 'hidden by a partial read')}</div>
+  ${d.board.joined.length || d.board.left.length ? `<div class="note plain" id="boardMoves">${d.board.joined.length ? `Joined the boards: ${list(d.board.joined)}. ` : ''}${d.board.left.length ? `Dropped off: ${list(d.board.left)}.` : ''}</div>` : ''}
+  <table id="changeTable"><thead><tr class="label"><th>What</th><th>Wallet</th><th>Market</th><th class="r">Shares</th><th style="text-align:center">Dollars at today's price</th><th class="r">Price now</th></tr></thead><tbody>
+  ${d.changes.slice(0, 80).map(c => `<tr class="${c.unsure ? 'unsure' : ''}" data-change="${esc(c.kind)}">
+    <td>${kindChip(c.kind)}${c.unsure ? ' <span class="chip partial">unsure: partial read</span>' : ''}</td>
+    <td><b>${esc(c.name)}</b></td>
+    <td><div style="font-weight:600;max-width:560px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.title)}</div>${c.kind === 'unpaired' || c.kind === 'paired' ? `<span class="chip both">both sides</span> <span class="ink2" style="font-size:14.5px">${int(c.pairsBefore)} → ${int(c.pairsNow)} pairs of one Yes and one No</span>` : `<span class="chip out">${esc(c.outcome)}</span>`}${c.kind === 'unpaired' || c.kind === 'paired' ? '' : c.sharesBefore !== undefined ? ` <span class="ink2" style="font-size:14.5px">${int(c.sharesBefore)} → ${int(c.sharesNow)} shares</span>` : ''}</td>
+    <td class="r num">${c.shares > 0 ? '+' : '−'}${int(Math.abs(c.shares))}</td>
+    <td><div style="display:flex;align-items:center;gap:12px;justify-content:center"><div class="delta"><div class="neg">${c.usd < 0 ? `<i style="width:${Math.max(2, Math.abs(c.usd) / max * 100)}%"></i>` : ''}</div><div class="pos">${c.usd > 0 ? `<i style="width:${Math.max(2, c.usd / max * 100)}%"></i>` : ''}</div></div><span class="num money" style="width:120px;text-align:right">${c.usd > 0 ? '+' : '−'}${usd(Math.abs(c.usd)).replace('−', '')}</span></div></td>
+    <td class="r num">${c.mark === undefined || c.kind === 'unpaired' || c.kind === 'paired' ? '<span class="muted">$1 a pair</span>' : cents(c.mark)}</td></tr>`).join('')}
+  </tbody></table>
+  <p class="src" style="margin-top:12px">Two reads of GET /v1/accounts/polymarket/{wallet}/positions, compared wallet by wallet after netting. "Gone" cannot tell a sale from a market that settled at zero.</p>`;
+}
+
+function costs(v) {
+  const c = v.cost, u = v.usage || {byKind: {}}, k = u.byKind || {}, cfg = S.config;
+  const line = (name, b, each) => `<tr><td>${name}</td><td class="r num">${int(b?.requests || 0)}</td><td class="r num">× ${each}</td><td class="r num"><b>${int(b?.credits || 0)}</b></td></tr>`;
+  const fits = hours => { const m = c.perRefresh * 720 / hours; return `${int(m)}`; };
+  const field = (id, label, hint) => `<label for="${id}">${label}<small>${hint}</small></label><input id="${id}" type="number" value="${cfg[id]}">`;
+  return `<div class="cols">
+    <div>
+      <div class="card" id="costBox" style="border-left:3px solid var(--brand)">
+        <div class="label">What this costs to run</div>
+        <div class="costbig num" style="margin-top:10px">${int(c.perMonth)} <small>credits a month, of ${int(c.freeCredits)} on the free plan</small></div>
+        <div class="meter ${c.fitsFree ? '' : 'over'}"><i style="width:${Math.min(100, c.shareOfFree * 100)}%"></i></div>
+        <div class="ink2">One refresh every ${cfg.refreshHours} hours × ${int(c.perRefresh)} credits. ${c.fitsFree ? `That is ${pct(c.shareOfFree)} of the free plan, which leaves room for about ${int(c.copyChecksLeft)} copy checks a month.` : 'That is more than the free plan includes.'}</div>
+        <table style="margin-top:14px"><thead><tr class="label"><th>Last refresh</th><th class="r">Requests</th><th class="r">Credits each</th><th class="r">Credits</th></tr></thead><tbody>
+          ${line('Leaderboards (week, month, all time)', k.leaderboard, S.costs.leaderboard)}
+          ${line('Position pages, 100 rows each', k.positions, S.costs.positions)}
+          <tr><td><b>One refresh</b>${u.seconds ? ` <span class="muted">· ${u.seconds} seconds</span>` : ''}</td><td class="r num"><b>${int(u.requests || 0)}</b></td><td></td><td class="r num"><b>${int(u.credits || 0)}</b></td></tr>
+          <tr><td>One copy check (order book ${S.costs.orderBook} + price history ${S.costs.candles})</td><td class="r num">2</td><td></td><td class="r num"><b>${S.costs.orderBook + S.costs.candles}</b></td></tr>
+        </tbody></table>
+        <div class="src" style="margin-top:10px">Counted from the x-credits-charged header on every response · this key has used ${int(S.counters.credits)} credits in ${int(S.counters.requests)} requests since it was set up here</div>
+      </div>
+      <div class="card" id="planBox">
+        <div class="label">How often you can refresh on each plan</div>
+        <table style="margin-top:6px"><thead><tr class="label"><th>Plan</th><th class="r">Credits a month</th><th class="r">Requests a minute</th><th>What fits</th></tr></thead><tbody>
+          <tr><td><b>Free</b> · $0</td><td class="r num">25,000</td><td class="r num">60</td><td>Once a day (${fits(24)}), or every 12 hours (${fits(12)})</td></tr>
+          <tr><td><b>Builder</b> · $48.88 a month</td><td class="r num">500,000</td><td class="r num">300</td><td>Every hour (${fits(1)})</td></tr>
+          <tr><td><b>Pro</b> · $149 a month</td><td class="r num">5,000,000</td><td class="r num">3,000</td><td>Every 5 minutes (${fits(1 / 12)})</td></tr>
+        </tbody></table>
+        <div style="margin-top:10px"><a class="btn" style="text-decoration:none;display:inline-block" href="https://predictefy.com/en/pricing?utm_source=youtube&utm_medium=video&utm_campaign=top-traders-tracker&utm_content=upgrade" target="_blank" rel="noopener">Predictefy plans →</a> <span class="muted" style="font-size:14.5px">The free plan also reads 7 days of price history. A longer chart in the copy check needs Builder.</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><div class="label">Settings</div>
+        <div class="form" style="margin-top:12px">
+          ${field('refreshHours', 'Refresh every (hours)', 'A refresh costs the same however often you run it')}
+          ${field('boardWeek', 'Wallets from this week\'s board', 'Up to 100')}
+          ${field('boardMonth', 'Wallets from this month\'s board', 'Up to 100')}
+          ${field('boardAll', 'Wallets from the all-time board', 'Up to 100')}
+          ${field('maxPages', 'Pages of positions per wallet', '3 credits a page; a wallet with more is labelled partial')}
+          ${field('requestsPerMinute', 'Requests a minute', 'The free plan allows 60')}
+          ${field('minValue', 'Smallest position that counts ($)', 'For agree, disagree and what changed')}
+          ${field('copyUsd', 'Copy check size ($)', 'What a buy this big would cost on the live book')}
+          ${field('historyDays', 'Price history in the copy check (days)', 'The free plan reads 7')}
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;align-items:center"><button class="btn primary" id="saveCfg">Save settings</button><button class="btn" id="refreshNow" ${S.replay || S.busy ? 'disabled' : ''}>Refresh now · about ${int(c.perRefresh || 280)} credits</button><span class="muted" id="cfgMsg"></span></div>
+      </div>
+      <div class="card"><div class="label">Activity</div><div class="mono" style="margin-top:8px;max-height:230px;overflow:auto;white-space:pre-wrap;color:var(--ink-2)">${S.logs.slice(0, 30).map(l => esc(`${clock(l.at).slice(0, 8)}  ${l.text}`)).join('\n') || 'Nothing yet.'}</div></div>
+    </div>
+  </div>`;
+}
+
+function limits(v) {
+  const items = [
+    ['A wallet is not a person', 'The leaderboard ranks wallets. One trader can use several, and several people can share one. An empty wallet does not mean an empty trader.'],
+    ['Profit is Polymarket\'s number', 'Ranks and profit come straight from Polymarket\'s board through Predictefy. The tracker does not recompute them.'],
+    ['Big wallets are read in part', `A wallet with thousands of small rows is read up to ${S.config.maxPages} pages and labelled partial. ${v.totals.partial} of ${v.totals.wallets} hit that limit in this snapshot. Rows come largest first, so what is unread is small.`],
+    ['Average entry can mislead', 'In an event with several outcomes, shares can be created or converted without a trade, and the reported average price is then not what anyone paid. Those rows are labelled. Trust the plain yes-or-no markets more.'],
+    ['It shows what they hold, not when they will sell', 'A position row has no date. The tracker sees a holding the next time it refreshes, never the moment it was bought or sold.'],
+    ['"Gone" is not always "sold"', 'A position that disappears was either sold or settled at zero. The tracker cannot tell which from the positions alone.'],
+  ];
+  return `<div class="limits" id="limitsList">${items.map(([title, text], i) => `<div class="card limit"><div class="n">${i + 1}</div><div><b>${title}</b><span>${text}</span></div></div>`).join('')}</div>
+  <p class="ink2" style="margin-top:6px">Nothing here is a recommendation. It is a record of public positions, read through the Predictefy API.</p>`;
+}
+
+async function openCopy(wallet, marketId) {
+  ui.drawer = wallet; ui.copy = marketId; ui.copyData = null; ui.copyBusy = true; drawer(); $('#drawer').scrollTop = 0;
+  try { ui.copyData = await (await fetch(`/api/copy?wallet=${encodeURIComponent(wallet)}&market=${encodeURIComponent(marketId)}`)).json(); } catch (error) { ui.copyData = {error: 'The copy check could not be read.'}; }
+  ui.copyBusy = false; if (ui.copy === marketId) drawer();
+}
+function openTrader(wallet) { ui.drawer = wallet; ui.copy = null; drawer(); $('#drawer').scrollTop = 0; $('#drawer').classList.add('open'); $('#shade').classList.add('open'); }
+function closeDrawer() { ui.drawer = null; ui.copy = null; $('#drawer').classList.remove('open'); $('#shade').classList.remove('open'); }
+function setTab(tab) { ui.tab = tab; nav(); main(); window.scrollTo(0, 0); }
+function setBoard(id) { ui.board = id; main(); }
+
+document.addEventListener('click', async e => {
+  const hit = selector => e.target.closest(selector);
+  if (hit('[data-tab]')) return setTab(hit('[data-tab]').dataset.tab);
+  if (hit('[data-board]')) return setBoard(hit('[data-board]').dataset.board);
+  if (hit('[data-close]') || e.target.id === 'shade') return closeDrawer();
+  if (hit('[data-back]')) { ui.copy = null; drawer(); return; }
+  if (hit('[data-copy]')) return openCopy(ui.drawer, hit('[data-copy]').dataset.copy);
+  if (hit('[data-trader]')) return openTrader(hit('[data-trader]').dataset.trader);
+  if (e.target.id === 'saveCfg') {
+    const body = Object.fromEntries(['refreshHours', 'boardWeek', 'boardMonth', 'boardAll', 'maxPages', 'requestsPerMinute', 'minValue', 'copyUsd', 'historyDays'].map(id => [id, Number($('#' + id).value)]));
+    const response = await fetch('/api/config', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+    const result = await response.json(); shown = ''; await refreshState(); $('#cfgMsg').textContent = response.ok ? 'Saved' : result.error;
+  }
+  if (e.target.id === 'refreshNow') { await fetch('/api/refresh', {method: 'POST'}); shown = ''; await refreshState(); }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+async function refreshState() { S = await (await fetch('/api/state', {cache: 'no-store'})).json(); render(); }
+window.tracker = {setTab, setBoard, openTrader, openCopy, closeDrawer, state: () => S};
+load();
+</script>
+</body>
+</html>
