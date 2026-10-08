@@ -97,7 +97,7 @@ export function consensus(traders, minValue = DEFAULTS.minValue) {
   const total = e => e.holders.reduce((sum, h) => sum + h.value, 0);
   const all = [...byOutcome.values()].map(e => ({...e, total: total(e), holders: e.holders.sort((a, b) => b.value - a.value)}));
   for (const e of all) { const list = byMarket.get(e.marketId) || []; list.push(e); byMarket.set(e.marketId, list); }
-  const agree = all.filter(e => e.holders.length > 1).sort((a, b) => b.holders.length - a.holders.length || b.total - a.total);
+  const agree = all.filter(e => e.holders.length > 1).sort((a, b) => b.total - a.total || b.holders.length - a.holders.length); // most dollars first
   const disagree = [...byMarket.values()].filter(sides => sides.length > 1 && new Set(sides.flatMap(e => e.holders.map(h => h.wallet))).size > 1)
     .map(sides => ({marketId: sides[0].marketId, title: sides[0].title, slug: sides[0].slug, endDate: sides[0].endDate, negRisk: sides.some(s => s.negRisk), total: sides.reduce((sum, s) => sum + s.total, 0), sides: sides.sort((a, b) => b.total - a.total)}))
     .sort((a, b) => b.total - a.total);
