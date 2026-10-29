@@ -2,7 +2,7 @@
 
 A small, read-only bot that reads Polymarket's profit leaderboards and shows what the wallets on them are holding right now: what they paid, what it is worth, where they agree, where they sit on opposite sides, and what it would cost you to buy the same position today.
 
-It runs on your own computer, uses the [Predictefy API](https://predictefy.com/en/api?utm_source=youtube&utm_medium=video&utm_campaign=top-traders-tracker&utm_content=github) for every number, and opens a local dashboard in your browser. It never places orders and never asks for a wallet key.
+It runs on your own computer, uses the [Predictefy API](https://predictefy.com/en/prediction-market-api?utm_source=youtube&utm_medium=video&utm_campaign=top-traders-tracker&utm_content=github) for every number, and opens a local dashboard in your browser. It never places orders and never asks for a wallet key.
 
 ![Top Traders Tracker dashboard](docs/dashboard.png)
 
